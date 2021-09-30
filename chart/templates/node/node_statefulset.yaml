@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-node
+  labels:
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+spec:
+  serviceName: {{ .Release.Name }}-node
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-node
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-node
+    spec:
+      volumes:
+      - name: shared-node
+        emptyDir: {}
+    {{- if .Values.node.pvc }}
+      - name: nodedata
+        persistentVolumeClaim:
+          claimName: {{ .Values.node.pvc }}
+    {{- end }}
+    {{- if .Values.postgres.enabled }}
+      - name: shared-postgres
+        emptyDir: {}
+          {{- if .Values.postgres.pvc }}
+      - name: postgresdata
+        persistentVolumeClaim:
+          claimName: {{ .Values.postgres.pvc }}
+          {{- end }}
+    {{- end }}
+    {{- if and .Values.dbSync.enabled .Values.dbSync.pvc }}
+      - name: dbsyncdata
+        persistentVolumeClaim:
+          claimName: {{ .Values.dbSync.pvc }}
+    {{- end }}
+    {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 10 }}
+    {{- end }}
+      serviceAccountName: {{ .Release.Name }}-node
+      containers:
+    {{- if .Values.socat.enabled }}
+      - name: socat
+        imagePullPolicy: {{ .Values.socat.imagePullPolicy }}
+        image: {{ .Values.socat.image }}
+        command:
+        - sh
+        - -c
+        - socat -d TCP-LISTEN:{{ .Values.socat.port }},reuseaddr,fork UNIX-CLIENT:/shared/node.socket
+        volumeMounts:
+        - name: shared-node
+          mountPath: /shared
+        ports:
+        - containerPort: {{ .Values.socat.port }}
+          name: socat
+        resources:
+{{ toYaml .Values.socat.resources | indent 12 }}
+    {{- end }}
+    {{- if .Values.dbSync.enabled }}
+      - name: dbsync
+        imagePullPolicy: {{ .Values.dbSync.imagePullPolicy }}
+        image: {{ .Values.dbSync.image }}
+        command:
+        - cardano-db-sync ## TODO
+        volumeMounts:
+        - name: shared-node
+          mountPath: /shared
+      {{- if .Values.postgres.enabled }}
+        - name: shared-postgres
+          mountPath: /var/run/postgresql
+      {{- end }}
+      {{- if and .Values.dbSync.enabled .Values.dbSync.pvc }}
+        - name: dbsyncdata
+          mountPath: /etc/db-sync/state
+      {{- end }}
+        env:
+        - name: POSTGRES_HOST
+          value: {{ .Release.Name }}-node
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+{{ toYaml .Values.dbSync.resources | indent 12 }}
+    {{- end }}
+    {{- if .Values.postgres.enabled }}
+      - name: postgres
+        imagePullPolicy: {{ .Values.postgres.imagePullPolicy }}
+        image: {{ .Values.postgres.image }}
+        command:
+        - docker-entrypoint.sh
+        - postgres
+        resources:
+{{ toYaml .Values.postgres.resources | indent 12 }}
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_PASSWORD
+          value: password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: shared-postgres
+          mountPath: /var/run/postgresql
+      {{- if .Values.postgres.pvc }}
+        - name: postgresdata
+          mountPath: /var/lib/postgresql/data
+      {{- end }}
+    {{- end }}
+      - name: node
+        imagePullPolicy: {{ .Values.node.imagePullPolicy }}
+        image: {{ .Values.node.image }}
+        volumeMounts:
+        - name: shared-node
+          mountPath: /shared
+    {{- if .Values.node.pvc }}
+        - name: nodedata
+          mountPath: /mnt
+    {{- end }}
+        command:
+        - TODO
+        resources:
+{{ toYaml .Values.node.resources | indent 12 }}
+        ports:
+        - containerPort: 1337
+          name: node

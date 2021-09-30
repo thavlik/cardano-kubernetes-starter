@@ -1,0 +1,41 @@
+imagePullSecrets: []
+
+node:
+  image: inputoutput/cardano-node:latest
+  imagePullPolicy: Always
+  resources:
+    limits:
+      memory: 9Gi
+      cpu: 2000m
+  pvc: ""
+
+dbSync:
+  enabled: true
+  image: inputoutput/cardano-db-sync:latest
+  imagePullPolicy: Always
+  resources:
+    limits:
+      memory: 1024Mi
+      cpu: 1000m
+  pvc: ""
+
+postgres:
+  enabled: true
+  image: postgres:9.6.23
+  imagePullPolicy: IfNotPresent
+  resources:
+    limits:
+      memory: 1024Mi
+      cpu: 1000m
+  pvc: ""
+
+socat:
+  enabled: true
+  imagePullPolicy: IfNotPresent
+  image: alpine/socat:1.7.4.1-r2
+  resources:
+    limits:
+      memory: 64Mi
+      cpu: 50m
+  port: 2100
+

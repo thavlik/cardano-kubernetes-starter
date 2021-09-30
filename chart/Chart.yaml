@@ -1,0 +1,8 @@
+apiVersion: v2
+description: Cardano Kubernetes Starter Chart
+name: cardano-kubernetes-starter
+version: 0.0.0
+maintainers:
+  - name: Tom Havlik
+    email: thavlik@protonmail.com
+

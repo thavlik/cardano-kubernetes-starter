@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-node
+  labels:
+    app: {{ .Release.Name }}-node
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}-node
+  ports:
+  - name: node
+    port: 1337
+{{- if .Values.socat.enabled }}
+  - name: socat
+    port: {{ .Values.socat.port }}
+{{- end }}
+{{- if .Values.postgres.enabled }}
+  - name: postgres
+    port: 5432
+{{- end }}
+
