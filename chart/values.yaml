@@ -1,6 +1,7 @@
 imagePullSecrets: []
 
 node:
+  # https://github.com/input-output-hk/cardano-node
   image: inputoutput/cardano-node:latest
   imagePullPolicy: Always
   resources:
@@ -10,6 +11,7 @@ node:
   pvc: ""
 
 dbSync:
+  # https://github.com/input-output-hk/cardano-db-sync
   enabled: true
   image: inputoutput/cardano-db-sync:latest
   imagePullPolicy: Always
@@ -20,6 +22,9 @@ dbSync:
   pvc: ""
 
 postgres:
+  # Note: cardano-db-sync requires a Unix socket file for
+  # postgres. Running cardano-node, db-sync, and postgres
+  # on the same machine is the only supported paradigm. 
   enabled: true
   image: postgres:9.6.23
   imagePullPolicy: IfNotPresent
@@ -30,6 +35,9 @@ postgres:
   pvc: ""
 
 socat:
+  # If enabled, the node pod will run socat in a sidecar
+  # container that will expose the cardano-node socket
+  # over TCP. This permits cardano-cli to be used remotely.
   enabled: true
   imagePullPolicy: IfNotPresent
   image: alpine/socat:1.7.4.1-r2
