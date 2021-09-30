@@ -40,7 +40,6 @@ spec:
       imagePullSecrets:
 {{ toYaml .Values.imagePullSecrets | indent 10 }}
     {{- end }}
-      serviceAccountName: {{ .Release.Name }}-node
       containers:
     {{- if .Values.socat.enabled }}
       - name: socat
