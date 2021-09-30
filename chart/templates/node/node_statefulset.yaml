@@ -81,14 +81,6 @@ spec:
           value: {{ .Release.Name }}-node
         - name: POSTGRES_PORT
           value: "5432"
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
         resources:
 {{ toYaml .Values.dbSync.resources | indent 12 }}
     {{- end }}
